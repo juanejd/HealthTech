@@ -1,0 +1,16 @@
+{
+  "schedules": [
+    {
+      "time": "08:00",
+      "days": ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
+      "message": "Es hora de tomar su medicamento de la mañana.",
+      "enabled": true
+    },
+    {
+      "time": "20:00",
+      "days": ["lunes", "miércoles", "viernes"],
+      "message": "Es hora de tomar su medicamento de la noche.",
+      "enabled": true
+    }
+  ]
+}
