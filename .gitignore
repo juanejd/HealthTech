@@ -11,6 +11,7 @@ backend/.env
 
 backend/logs/*.log
 backend/logs/pending_notifications.json
+backend/logs/carousel_position.json
 
 node_modules/
 dist/

@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks
 
 from modules.logger import log_event
-from modules.servo_controller import get_compartment_for_weekday, move_to_compartment
-from modules.sensor_manager import wait_for_extraction
+from modules.servo_controller import get_compartment_for_weekday, advance_to_compartment
+from modules.sensor_manager import wait_for_dispense_confirmation
 from modules.tts_engine import speak
 from modules.telegram_bot import send_notification
 from modules.fault_tolerance import enqueue
@@ -33,16 +33,16 @@ async def post_dispense(background_tasks: BackgroundTasks) -> dict:
     timestamp = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     speak("Es hora de tomar su medicamento.")
-    move_to_compartment(compartment_index)
-    extraction_detected = wait_for_extraction()
+    advance_to_compartment(compartment_index)
+    dispense_confirmed = wait_for_dispense_confirmation()
 
-    status = "OK" if extraction_detected else "FAIL"
+    status = "OK" if dispense_confirmed else "FAIL"
 
-    log_event("dispense", status, extraction_detected, day_name, compartment_index)
+    log_event("dispense", status, dispense_confirmed, day_name, compartment_index)
 
     result = {
         "status": status,
-        "extraction_detected": extraction_detected,
+        "extraction_detected": dispense_confirmed,
         "timestamp": timestamp,
     }
 
