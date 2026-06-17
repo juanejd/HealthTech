@@ -1,7 +1,7 @@
 """
 servo_controller.py — FS90R continuous-rotation servo driver.
 
-Hardware: FS90R connected to GPIO18 (BCM), driven via gpiozero + PiGPIOFactory.
+Hardware: FS90R connected to GPIO18 (BCM), driven via gpiozero (lgpio backend).
 
 The carousel has 8 positions (0–7):
   - Position 0: home / drop slot (refilled weekly by caregiver)
@@ -12,8 +12,8 @@ duration (STEP_DURATION_S) to advance one 45° step.  The current position is
 persisted in POSITION_FILE so it survives restarts.
 
 Pi setup (run once on the Pi):
-  sudo systemctl enable --now pigpiod
-  pip install gpiozero pigpio
+  sudo apt install -y python3-lgpio   # default GPIO backend on Bookworm
+  pip install gpiozero
 
 Calibration (on real hardware):
   1. Run hw_selftest.py to verify raw servo response.
@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 try:
     from gpiozero import Servo
-    from gpiozero.pins.pigpio import PiGPIOFactory
 
     HARDWARE_AVAILABLE = True
 except (ImportError, RuntimeError):
@@ -107,8 +106,8 @@ def _get_servo() -> "Servo | None":
     if not HARDWARE_AVAILABLE:
         return None
     try:
-        factory = PiGPIOFactory()
-        return Servo(SERVO_GPIO_PIN, pin_factory=factory)
+        # gpiozero's default pin factory (lgpio on Raspberry Pi OS Bookworm).
+        return Servo(SERVO_GPIO_PIN)
     except Exception as exc:
         logger.error("Failed to initialize servo on GPIO%d: %s", SERVO_GPIO_PIN, exc)
         return None

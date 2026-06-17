@@ -12,8 +12,8 @@ Dispense confirmation logic:
   fallen into the dispensing cup (dispensed = OK).
 
 Pi setup (run once on the Pi):
-  sudo systemctl enable --now pigpiod
-  pip install gpiozero pigpio
+  sudo apt install -y python3-lgpio   # default GPIO backend on Bookworm
+  pip install gpiozero
 
 Calibration:
   1. Call tare() with the empty dispensing cup on the scale.
@@ -39,7 +39,6 @@ logger = logging.getLogger(__name__)
 
 try:
     import gpiozero
-    from gpiozero.pins.pigpio import PiGPIOFactory
     from gpiozero import DigitalInputDevice, DigitalOutputDevice
 
     HARDWARE_AVAILABLE = True
@@ -92,9 +91,8 @@ def _read_hx711_raw() -> float:
         return _MOCK_RAW_VALUE
 
     try:
-        factory = PiGPIOFactory()
-        dt = DigitalInputDevice(HX711_DT_PIN, pin_factory=factory)
-        sck = DigitalOutputDevice(HX711_SCK_PIN, pin_factory=factory)
+        dt = DigitalInputDevice(HX711_DT_PIN)
+        sck = DigitalOutputDevice(HX711_SCK_PIN)
 
         # Wait for DRDY (DT goes LOW when data is ready)
         deadline = time.monotonic() + 1.0

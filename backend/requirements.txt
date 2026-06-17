@@ -8,4 +8,4 @@ python-dotenv>=1.0.0
 # Hardware drivers — required only on Raspberry Pi; guarded by try/except import
 # in servo_controller.py and sensor_manager.py, so the test suite runs without them.
 gpiozero>=2.0
-pigpio>=1.78
+lgpio>=0.2.2.0
