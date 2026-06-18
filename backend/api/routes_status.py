@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import socket
 from datetime import datetime, timezone
-from typing import Optional
 
 from fastapi import APIRouter
 
 from modules.scheduler import get_current_day_name, get_next_event, get_schedules
 from modules.servo_controller import get_compartment_for_weekday
-from modules.telegram_bot import is_connected as telegram_is_connected
 from modules.logger import read_events
 
 router = APIRouter()
@@ -41,6 +39,5 @@ def get_status() -> dict:
         "compartment_index": compartment_index,
         "next_event": next_event,
         "last_event": last_event,
-        "telegram_connected": telegram_is_connected(),
         "wifi_connected": _check_wifi(),
     }

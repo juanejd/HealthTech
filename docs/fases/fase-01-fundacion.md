@@ -18,7 +18,6 @@ Tener un proyecto ejecutable con configuración cargable, logging funcional y es
 | `backend/config/schedules.json`  | Configuración inicial de horarios de dispensación                |
 | `backend/modules/logger.py`      | Registro de eventos con timestamp UTC                            |
 | `backend/requirements.txt`       | Dependencias Python del proyecto                                 |
-| `.env.example`                   | Plantilla de variables de entorno (Telegram token, chat_id)      |
 
 ---
 
@@ -27,7 +26,6 @@ Tener un proyecto ejecutable con configuración cargable, logging funcional y es
 | ID    | Descripción                                                      |
 |-------|------------------------------------------------------------------|
 | RF-6  | El sistema debe registrar todos los eventos con marca temporal UTC. |
-| RNF-3 | Las credenciales de Telegram deben almacenarse en variables de entorno. |
 | RNF-4 | El software debe ejecutarse sobre Python 3.9+.                   |
 
 ---
@@ -38,7 +36,6 @@ Tener un proyecto ejecutable con configuración cargable, logging funcional y es
 - [ ] `backend/main.py` arranca con `uvicorn main:app` sin errores.
 - [ ] `logger.py` registra eventos en `backend/logs/events.log` con timestamp UTC en formato ISO 8601.
 - [ ] `schedules.json` carga correctamente y valida su estructura mínima (array `schedules` con campos `time`, `days`, `message`, `enabled`).
-- [ ] Las credenciales de Telegram se leen desde variables de entorno (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`).
 - [ ] El entorno virtual se activa y todas las dependencias de `requirements.txt` se instalan sin conflictos.
 
 ---

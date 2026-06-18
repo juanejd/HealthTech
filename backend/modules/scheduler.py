@@ -10,7 +10,15 @@ logger = logging.getLogger(__name__)
 
 SCHEDULES_FILE: Path = Path(__file__).parent.parent / "config" / "schedules.json"
 
-_SPANISH_DAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_SPANISH_DAYS = [
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+    "domingo",
+]
 
 _loaded_schedules: Optional[List[dict]] = None
 

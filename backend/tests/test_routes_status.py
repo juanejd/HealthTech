@@ -13,7 +13,6 @@ def test_get_status_has_required_fields(client):
     data = response.json()
     assert "current_day" in data
     assert "compartment_index" in data
-    assert "telegram_connected" in data
     assert "wifi_connected" in data
 
 

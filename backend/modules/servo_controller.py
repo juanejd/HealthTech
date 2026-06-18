@@ -22,6 +22,7 @@ Calibration (on real hardware):
   3. If the servo drifts at neutral, fine-tune STOP_VALUE so the carousel
      stops completely when value=STOP_VALUE.
 """
+
 from __future__ import annotations
 
 import json
@@ -77,12 +78,8 @@ POSITION_FILE: Path = Path(__file__).parent.parent / "logs" / "carousel_position
 
 _position: int = 0
 
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
 
 def _load_position() -> int:
-    """Load persisted carousel position from disk, defaulting to 0."""
     try:
         data = json.loads(POSITION_FILE.read_text(encoding="utf-8"))
         return int(data.get("position", 0)) % NUM_POSITIONS
@@ -91,22 +88,17 @@ def _load_position() -> int:
 
 
 def _save_position(index: int) -> None:
-    """Persist carousel position to disk."""
     try:
         POSITION_FILE.parent.mkdir(parents=True, exist_ok=True)
-        POSITION_FILE.write_text(
-            json.dumps({"position": index}), encoding="utf-8"
-        )
+        POSITION_FILE.write_text(json.dumps({"position": index}), encoding="utf-8")
     except OSError as exc:
         logger.error("Failed to persist carousel position: %s", exc)
 
 
 def _get_servo() -> "Servo | None":
-    """Create and return a Servo instance, or None in mock mode."""
     if not HARDWARE_AVAILABLE:
         return None
     try:
-        # gpiozero's default pin factory (lgpio on Raspberry Pi OS Bookworm).
         return Servo(SERVO_GPIO_PIN)
     except Exception as exc:
         logger.error("Failed to initialize servo on GPIO%d: %s", SERVO_GPIO_PIN, exc)
@@ -119,23 +111,12 @@ def _get_servo() -> "Servo | None":
 
 _position = _load_position()
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
 
 def get_position() -> int:
-    """Return the currently tracked carousel position (0–7)."""
     return _position
 
 
 def set_home() -> None:
-    """
-    Set the carousel to position 0 (home/drop slot).
-
-    Call this after the caregiver manually rotates the carousel to the home
-    position during the weekly refill.
-    """
     global _position
     _position = 0
     _save_position(0)
@@ -143,7 +124,6 @@ def set_home() -> None:
 
 
 def reset_position() -> None:
-    """Alias for set_home() — resets tracked index to 0."""
     set_home()
 
 
@@ -170,13 +150,6 @@ def stop() -> None:
 
 
 def step_one_compartment() -> None:
-    """
-    Advance the carousel by one 45° step.
-
-    In hardware mode: spin the servo at STEP_SPEED * DIRECTION for
-    STEP_DURATION_S seconds, then command stop.
-    In mock mode: simulate the same position update without GPIO.
-    """
     global _position
 
     if HARDWARE_AVAILABLE:
@@ -238,6 +211,7 @@ def cleanup() -> None:
     if HARDWARE_AVAILABLE:
         try:
             from gpiozero import Device
+
             Device.close()
         except Exception as exc:
             logger.debug("GPIO cleanup: %s", exc)
@@ -245,24 +219,10 @@ def cleanup() -> None:
         logger.debug("Mock servo: cleanup called")
 
 
-# ---------------------------------------------------------------------------
-# Backward-compatibility shims (callers from Fase 01 / existing tests)
-# ---------------------------------------------------------------------------
-
-
 def get_compartment_for_weekday(weekday: int) -> int:
-    """
-    Return the carousel compartment index for a given ISO weekday (0=Mon, 6=Sun).
 
-    Compartment 0 is the home/drop slot; compartments 1–7 map to Mon–Sun.
-    """
     return weekday
 
 
 def move_to_compartment(day_index: int) -> None:
-    """
-    Backward-compat shim: advance the carousel to the compartment for day_index.
-
-    Equivalent to advance_to_compartment(day_index).
-    """
     advance_to_compartment(day_index)

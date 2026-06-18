@@ -27,7 +27,9 @@ class ScheduleEntry(BaseModel):
     @classmethod
     def validate_time_format(cls, v: str) -> str:
         if not _TIME_RE.match(v):
-            raise ValueError(f"Invalid time format: '{v}'. Expected HH:MM (00:00-23:59).")
+            raise ValueError(
+                f"Invalid time format: '{v}'. Expected HH:MM (00:00-23:59)."
+            )
         return v
 
 
@@ -47,6 +49,8 @@ def get_schedules_endpoint() -> dict:
 @router.put("/schedules")
 def put_schedules(payload: SchedulesPayload) -> dict:
     data = payload.model_dump()
-    SCHEDULES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    SCHEDULES_FILE.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     reload_schedules()
     return data

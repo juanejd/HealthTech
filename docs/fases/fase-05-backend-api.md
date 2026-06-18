@@ -50,7 +50,6 @@ El dashboard puede consultar el estado del sistema, modificar horarios, revisar 
     "status": "OK",
     "extraction_detected": true
   },
-  "telegram_connected": true,
   "wifi_connected": true
 }
 ```
@@ -108,7 +107,7 @@ El dashboard puede consultar el estado del sistema, modificar horarios, revisar 
 - [ ] El WebSocket `/ws/status` emite un mensaje de estado cada vez que ocurre un evento de dispensación.
 - [ ] CORS está configurado para aceptar peticiones del frontend React (dominio `localhost:3000` en desarrollo).
 - [ ] La API valida los tipos de datos de entrada con Pydantic y retorna 422 con detalle del error si la validación falla.
-- [ ] `GET /api/status` retorna el estado de conectividad Wi-Fi y Telegram en tiempo real.
+- [ ] `GET /api/status` retorna el estado de conectividad Wi-Fi en tiempo real.
 
 ---
 
@@ -116,8 +115,7 @@ El dashboard puede consultar el estado del sistema, modificar horarios, revisar 
 
 - **Fase 01** — estructura base y logging.
 - **Fase 02** — `servo_controller`, `sensor_manager`.
-- **Fase 03** — `scheduler`, `tts_engine`, `fault_tolerance`.
-- **Fase 04** — `telegram_bot`.
+- **Fase 03** — `scheduler`, `fault_tolerance`.
 
 ---
 

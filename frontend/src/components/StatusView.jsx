@@ -13,7 +13,6 @@ export default function StatusView({ status }) {
     compartment_index,
     next_event,
     last_event,
-    telegram_connected,
     wifi_connected,
   } = status
 
@@ -22,11 +21,6 @@ export default function StatusView({ status }) {
       <h2>Estado del sistema</h2>
 
       <div className="status-connectivity">
-        <div className="status-row">
-          <span>Telegram:</span>
-          <Indicator connected={telegram_connected} testId="telegram-indicator" />
-          <span>{telegram_connected ? 'Conectado' : 'Desconectado'}</span>
-        </div>
         <div className="status-row">
           <span>Wi-Fi:</span>
           <Indicator connected={wifi_connected} testId="wifi-indicator" />

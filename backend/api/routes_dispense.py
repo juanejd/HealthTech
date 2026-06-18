@@ -7,8 +7,6 @@ from fastapi import APIRouter, BackgroundTasks
 from modules.logger import log_event
 from modules.servo_controller import get_compartment_for_weekday, advance_to_compartment
 from modules.sensor_manager import wait_for_dispense_confirmation
-from modules.tts_engine import speak
-from modules.telegram_bot import send_notification
 from modules.fault_tolerance import enqueue
 from modules.scheduler import get_current_day_name
 from api.websocket import manager
@@ -32,7 +30,6 @@ async def post_dispense(background_tasks: BackgroundTasks) -> dict:
     compartment_index = get_compartment_for_weekday(weekday)
     timestamp = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    speak("Es hora de tomar su medicamento.")
     advance_to_compartment(compartment_index)
     dispense_confirmed = wait_for_dispense_confirmation()
 
@@ -48,7 +45,6 @@ async def post_dispense(background_tasks: BackgroundTasks) -> dict:
 
     notification = {**result, "day": day_name, "compartment_index": compartment_index}
     enqueue(notification)
-    send_notification(notification)
 
     background_tasks.add_task(_broadcast_status, result)
 

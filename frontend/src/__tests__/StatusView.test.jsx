@@ -20,12 +20,11 @@ describe('StatusView', () => {
       compartment_index: 0,
       next_event: null,
       last_event: null,
-      telegram_connected: true,
       wifi_connected: true,
     }
     render(<StatusView status={status} />)
     // Should not crash and should render something meaningful
-    expect(screen.getByText(/telegram/i)).toBeInTheDocument()
+    expect(screen.getByText(/wi-fi/i)).toBeInTheDocument()
   })
 
   it('renders status correctly when last_event is null (no crash)', () => {
@@ -34,41 +33,23 @@ describe('StatusView', () => {
       compartment_index: 1,
       next_event: { time: '08:00', message: 'Tomar pastilla' },
       last_event: null,
-      telegram_connected: false,
       wifi_connected: true,
     }
     render(<StatusView status={status} />)
-    expect(screen.getByText(/telegram/i)).toBeInTheDocument()
+    expect(screen.getByText(/wi-fi/i)).toBeInTheDocument()
   })
 
-  it('shows green indicator when telegram_connected is true', () => {
+  it('does not render a Telegram indicator', () => {
     const status = {
       current_day: 1,
       compartment_index: 0,
       next_event: null,
       last_event: null,
-      telegram_connected: true,
-      wifi_connected: false,
-    }
-    render(<StatusView status={status} />)
-    const indicators = document.querySelectorAll('[data-testid="telegram-indicator"]')
-    expect(indicators.length).toBeGreaterThan(0)
-    expect(indicators[0].className).toMatch(/green/i)
-  })
-
-  it('shows red indicator when telegram_connected is false', () => {
-    const status = {
-      current_day: 1,
-      compartment_index: 0,
-      next_event: null,
-      last_event: null,
-      telegram_connected: false,
       wifi_connected: true,
     }
     render(<StatusView status={status} />)
-    const indicators = document.querySelectorAll('[data-testid="telegram-indicator"]')
-    expect(indicators.length).toBeGreaterThan(0)
-    expect(indicators[0].className).toMatch(/red/i)
+    expect(screen.queryByText(/telegram/i)).not.toBeInTheDocument()
+    expect(document.querySelector('[data-testid="telegram-indicator"]')).toBeNull()
   })
 
   it('shows green indicator when wifi_connected is true', () => {
@@ -77,7 +58,6 @@ describe('StatusView', () => {
       compartment_index: 0,
       next_event: null,
       last_event: null,
-      telegram_connected: false,
       wifi_connected: true,
     }
     render(<StatusView status={status} />)
@@ -92,7 +72,6 @@ describe('StatusView', () => {
       compartment_index: 0,
       next_event: null,
       last_event: null,
-      telegram_connected: true,
       wifi_connected: false,
     }
     render(<StatusView status={status} />)
@@ -111,7 +90,6 @@ describe('StatusView', () => {
         status: 'OK',
         extraction_detected: true,
       },
-      telegram_connected: true,
       wifi_connected: true,
     }
     render(<StatusView status={status} />)

@@ -1,6 +1,6 @@
 # HealthTech — Documentación Técnica General
 
-**Proyecto:** Dispensador Inteligente de Medicamentos Asistido por Voz  
+**Proyecto:** Dispensador Inteligente de Medicamentos  
 **Versión:** 2.0.0  
 **Fecha:** Junio de 2026  
 **Autores:** Stefanía García López · Juan Esteban Jiménez Daza  
@@ -17,23 +17,21 @@ La adherencia terapéutica constituye uno de los principales retos dentro de los
 
 ### 1.2 Solución Propuesta
 
-HealthTech es un dispensador inteligente de medicamentos de funcionamiento semanal, construido sobre una plataforma embebida Linux (Raspberry Pi Zero 2W). El sistema automatiza la dispensación mediante un carrusel rotativo de siete compartimentos (uno por día), genera alertas auditivas por síntesis de voz, verifica la extracción del medicamento con sensores y envía notificaciones remotas al cuidador a través de Telegram.
+HealthTech es un dispensador inteligente de medicamentos de funcionamiento semanal, construido sobre una plataforma embebida Linux (Raspberry Pi Zero 2W). El sistema automatiza la dispensación mediante un carrusel rotativo de siete compartimentos (uno por día) y verifica la extracción del medicamento con un sensor de peso, registrando cada evento localmente.
 
 La solución se complementa con un backend FastAPI y un dashboard React.js que permiten al cuidador configurar horarios, visualizar el estado del sistema y consultar el historial de eventos desde cualquier dispositivo en la red local.
 
 ### 1.3 Objetivo General
 
-Diseñar e implementar un dispensador inteligente semanal de medicamentos basado en Raspberry Pi Zero 2W, capaz de automatizar la entrega de dosis programadas mediante un sistema de carrusel rotativo, generar alertas de voz, detectar la extracción del medicamento y emitir notificaciones remotas al cuidador.
+Diseñar e implementar un dispensador inteligente semanal de medicamentos basado en Raspberry Pi Zero 2W, capaz de automatizar la entrega de dosis programadas mediante un sistema de carrusel rotativo, detectar la extracción del medicamento y registrar cada evento localmente.
 
 ### 1.4 Objetivos Específicos
 
 1. Diseñar un sistema mecánico rotativo compuesto por siete compartimentos correspondientes a cada día de la semana.
 2. Implementar un sistema de control embebido basado en Raspberry Pi Zero 2W utilizando Linux y Python.
-3. Integrar un sistema de síntesis de voz para alertar al usuario sobre la administración del medicamento.
-4. Implementar sensores de confirmación de retiro del medicamento.
-5. Registrar eventos de dispensación en archivos locales con marcas temporales.
-6. Implementar un sistema de comunicación remota mediante Telegram para informar al cuidador sobre el estado de cada evento de dosificación.
-7. Diseñar un sistema configurable de horarios de administración sin reinicio del servicio.
+3. Implementar sensores de confirmación de retiro del medicamento.
+4. Registrar eventos de dispensación en archivos locales con marcas temporales.
+5. Diseñar un sistema configurable de horarios de administración sin reinicio del servicio.
 
 ---
 
@@ -43,12 +41,11 @@ Diseñar e implementar un dispensador inteligente semanal de medicamentos basado
 
 | Componente          | Modelo / Especificación       | Función                                                        |
 |---------------------|-------------------------------|----------------------------------------------------------------|
-| Unidad principal    | Raspberry Pi Zero 2W          | Control central: lógica de dispensación, TTS, Telegram, FastAPI |
+| Unidad principal    | Raspberry Pi Zero 2W          | Control central: lógica de dispensación, FastAPI                |
 | Servomotor          | SG90                          | Movimiento angular del carrusel semanal de siete compartimentos |
 | Sensor de extracción| IR reflectivo o capacitivo     | Detección de retiro del medicamento                             |
-| Audio               | PAM8403 + parlante 5V         | Salida de alertas TTS                                           |
 | Almacenamiento      | MicroSD 16 GB o superior      | Sistema operativo y persistencia de registros                   |
-| Conectividad        | Wi-Fi integrado (RPi Zero 2W) | Red local (dashboard) y Telegram                                |
+| Conectividad        | Wi-Fi integrado (RPi Zero 2W) | Red local (dashboard)                                           |
 | Alimentación        | Fuente 5V regulada (2A mín.)  | Suministro energético del sistema                               |
 | Pulsador            | Push button GPIO               | Confirmación manual o mantenimiento                             |
 
@@ -60,9 +57,7 @@ Diseñar e implementar un dispensador inteligente semanal de medicamentos basado
 | Runtime     | Python                  | 3.9+           | Lógica embebida y backend                  |
 | Backend     | FastAPI                 | 0.100+         | API REST para el dashboard                 |
 | Frontend    | React.js                | 18+            | Dashboard de administración                |
-| TTS         | espeak-ng o Piper TTS   | —              | Síntesis de voz para alertas               |
 | GPIO        | RPi.GPIO o gpiozero     | —              | Control de pines (servo, sensor, pulsador) |
-| Bot         | python-telegram-bot     | —              | Notificaciones remotas al cuidador         |
 | Servidor ASGI| Uvicorn                | 0.20+          | Servidor para FastAPI                      |
 
 ### 2.3 Justificación del Servomotor SG90
@@ -122,11 +117,11 @@ El cuidador accede al dashboard React.js desde cualquier navegador en la red loc
                            ┌──────────────────────────────────┼──────────┐
                            │          HARDWARE FÍSICO         │          │
                            │                                  ▼          │
-                           │  ┌──────────┐  ┌────────┐  ┌─────────┐    │
-                           │  │ SG90     │  │Sensor  │  │PAM8403  │    │
-                           │  │ Servo    │  │IR/Cap. │  │+ Speaker│    │
-                           │  │ (PWM)    │  │        │  │(Audio)  │    │
-                           │  └──────────┘  └────────┘  └─────────┘    │
+                           │  ┌──────────┐  ┌────────┐                 │
+                           │  │ SG90     │  │Sensor  │                 │
+                           │  │ Servo    │  │IR/Cap. │                 │
+                           │  │ (PWM)    │  │        │                 │
+                           │  └──────────┘  └────────┘                 │
                            │                                            │
                            │  ┌──────────┐                              │
                            │  │Pulsador  │                              │
@@ -160,17 +155,15 @@ El cuidador accede al dashboard React.js desde cualquier navegador en la red loc
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │  │
 │  │  │  Scheduler   │  │  Controlador │  │  Gestor          │ │  │
 │  │  │  (Horarios)  │  │  Servo SG90  │  │  Sensores        │ │  │
-│  │  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘ │  │
-│  │         │                 │                    │           │  │
-│  │  ┌──────┴───────┐  ┌──────┴───────┐  ┌────────┴─────────┐ │  │
-│  │  │  Motor TTS   │  │  Sistema     │  │  Módulo          │ │  │
-│  │  │  (espeak-ng  │  │  de Logs     │  │  Telegram        │ │  │
-│  │  │   / Piper)   │  │  (UTC)       │  │  (Bot API)       │ │  │
 │  │  └──────────────┘  └──────────────┘  └──────────────────┘ │  │
 │  │                                                            │  │
 │  │  ┌──────────────────────────────────────────────────────┐  │  │
+│  │  │  Sistema de Logs (eventos con marca temporal UTC)    │  │  │
+│  │  └──────────────────────────────────────────────────────┘  │  │
+│  │                                                            │  │
+│  │  ┌──────────────────────────────────────────────────────┐  │  │
 │  │  │  Gestor de Tolerancia a Fallos                       │  │  │
-│  │  │  (Cola de notificaciones pendientes si no hay red)   │  │  │
+│  │  │  (Cola de eventos pendientes si no hay red)          │  │  │
 │  │  └──────────────────────────────────────────────────────┘  │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                              │                                    │
@@ -190,11 +183,10 @@ El cuidador accede al dashboard React.js desde cualquier navegador en la red loc
 | GPIO18 | SG90          | Señal PWM del servomotor         |
 | GPIO17 | Sensor IR     | Detección de extracción          |
 | GPIO27 | Pulsador      | Confirmación manual              |
-| GPIO21 | Audio PWM     | Salida auxiliar de audio         |
 
 ### 4.2 Consideraciones Eléctricas
 
-- Todas las referencias de tierra (GND) deben permanecer conectadas en común entre la Raspberry Pi, el SG90, el sensor y el amplificador de audio.
+- Todas las referencias de tierra (GND) deben permanecer conectadas en común entre la Raspberry Pi, el SG90 y el sensor.
 - El SG90 puede alimentarse desde el pin de 5V de la Raspberry Pi en condiciones de carga ligera. Si el carrusel presenta mayor peso mecánico, se recomienda una fuente externa dedicada de 5V para el servo.
 - La fuente de alimentación principal debe ser de 5V regulada con capacidad mínima de 2A para cubrir el consumo combinado de la RPi (~350 mA típico), el SG90 (~500–700 mA pico) y los periféricos.
 
@@ -221,11 +213,6 @@ El cuidador accede al dashboard React.js desde cualquier navegador en la red loc
      │                 │
      │  GPIO27 ◄──── Pulsador
      │  GND    ────► Pulsador (con pull-down)
-     │                 │
-     │  GPIO21 ────► PAM8403 (entrada audio)
-     │  GND    ────► PAM8403 (GND)
-     │  5V     ────► PAM8403 (VCC)
-     │                 │       └──► Parlante 5V
      └─────────────────┘
 ```
 
@@ -245,23 +232,13 @@ Genera la señal PWM en GPIO18 para posicionar el carrusel semanal en el compart
 
 Procesa las señales provenientes del sensor IR reflectivo o capacitivo conectado en GPIO17. Detecta si el medicamento fue retirado del compartimento después de la dispensación. También gestiona la entrada del pulsador físico en GPIO27 para confirmación manual.
 
-### 5.4 Motor TTS
+### 5.4 Sistema de Logs
 
-Reproduce alertas auditivas mediante síntesis de voz utilizando `espeak-ng` o `Piper TTS`. La alerta se emite al menos 60 segundos antes de la dispensación programada (RF-1). Ejemplo de mensaje:
+Registra todos los eventos de dispensación con marca temporal UTC (RF-6). Los eventos incluyen: activación programada, movimiento del servo y detección/no detección de extracción. Los registros se persisten en archivos locales en la MicroSD.
 
-> "Es hora de tomar su medicamento."
+### 5.5 Gestor de Tolerancia a Fallos
 
-### 5.5 Sistema de Logs
-
-Registra todos los eventos de dispensación con marca temporal UTC (RF-6). Los eventos incluyen: activación programada, alerta de voz, movimiento del servo, detección/no detección de extracción y envío de notificación. Los registros se persisten en archivos locales en la MicroSD.
-
-### 5.6 Módulo Telegram
-
-Envía notificaciones al cuidador mediante la API de Telegram Bot. El tiempo entre la dispensación y el envío de la notificación no debe superar 30 segundos (RF-4). Las credenciales del bot se almacenan en variables de entorno (RNF-3).
-
-### 5.7 Gestor de Tolerancia a Fallos
-
-Almacena las notificaciones pendientes cuando existe pérdida temporal de conexión a Internet (RF-7, RNF-6). Las notificaciones se reenvían automáticamente cuando se restablece la conectividad. El sistema debe reiniciar automáticamente servicios críticos ante fallos (RNF-7).
+Almacena los eventos pendientes cuando existe pérdida temporal de conexión a Internet (RF-7, RNF-6). Los eventos se sincronizan automáticamente cuando se restablece la conectividad. El sistema debe reiniciar automáticamente servicios críticos ante fallos (RNF-7).
 
 ---
 
@@ -294,7 +271,6 @@ FastAPI corre en la propia Raspberry Pi, servido por Uvicorn. Expone endpoints R
     "status": "OK",
     "extraction_detected": true
   },
-  "telegram_connected": true,
   "wifi_connected": true
 }
 ```
@@ -332,7 +308,7 @@ Dashboard elemental que permite al cuidador interactuar con el sistema desde cua
 
 El dashboard se compone de las siguientes vistas mínimas:
 
-**Vista de Estado:** Muestra el estado actual del sistema — día activo, próximo evento programado, estado de conectividad Wi-Fi y Telegram, y resultado del último evento de dispensación (OK / FAIL). Esta vista se actualiza en tiempo real mediante WebSocket.
+**Vista de Estado:** Muestra el estado actual del sistema — día activo, próximo evento programado, estado de conectividad Wi-Fi y resultado del último evento de dispensación (OK / FAIL). Esta vista se actualiza en tiempo real mediante WebSocket.
 
 **Vista de Horarios:** Permite al cuidador consultar, agregar, editar y eliminar horarios de dispensación. Los cambios se envían a la API mediante PUT a `/api/schedules` y se aplican sin reiniciar el servicio.
 
@@ -365,13 +341,10 @@ El dashboard se compone de las siguientes vistas mínimas:
   │            │               │         ▼            │              │          │
   │            │               │  Gestor Sensores  ◄───── Señal ────│ Sensor IR│
   │            │               │         │            │              │          │
-  │            │               │  Motor TTS ──────────────Audio ───►│ Parlante │
-  │            │               │         │            │              │          │
   │            │               │  Sistema Logs        │              │          │
   │            │               │         │            │              │          │
   │            │◄── WS ────────│  WebSocket broadcast │              │          │
   │            │  /ws/status   │         │            │              │          │
-  │            │               │  Módulo Telegram ──────► Internet ──► Cuidador │
   └────────────┘               └─────────────────────┘              └──────────┘
 ```
 
@@ -380,21 +353,19 @@ El dashboard se compone de las siguientes vistas mínimas:
 **Flujo de dispensación automática (sin intervención del dashboard):**
 
 1. El Scheduler monitorea continuamente el reloj del sistema.
-2. Al alcanzar la hora programada, el Motor TTS reproduce la alerta de voz al menos 60 segundos antes de la dispensación.
-3. El Controlador del Servo genera la señal PWM en GPIO18 y posiciona el carrusel en el compartimento correspondiente al día actual.
-4. El Gestor de Sensores espera la señal de extracción desde GPIO17.
-5. Si se detecta la extracción, el evento se registra como OK; si no se detecta dentro del tiempo de espera, se registra como FAIL.
-6. El Sistema de Logs guarda el evento con marca temporal UTC.
-7. El Módulo Telegram envía la notificación al cuidador en menos de 30 segundos.
-8. Si no hay conectividad, el Gestor de Tolerancia a Fallos almacena la notificación para reenviarla cuando se restablezca la red.
-9. Si el dashboard está conectado, se emite una actualización por WebSocket.
+2. El Controlador del Servo genera la señal PWM en GPIO18 y posiciona el carrusel en el compartimento correspondiente al día actual.
+3. El Gestor de Sensores espera la señal de extracción desde GPIO17.
+4. Si se detecta la extracción, el evento se registra como OK; si no se detecta dentro del tiempo de espera, se registra como FAIL.
+5. El Sistema de Logs guarda el evento con marca temporal UTC.
+6. Si no hay conectividad, el Gestor de Tolerancia a Fallos almacena el evento para sincronizarlo cuando se restablezca la red.
+7. Si el dashboard está conectado, se emite una actualización por WebSocket.
 
 **Flujo de dispensación manual (desde el dashboard):**
 
 1. El cuidador presiona el botón de dispensación manual en el dashboard.
 2. React envía POST a `/api/dispense`.
 3. FastAPI invoca el Controlador del Servo.
-4. Se ejecuta la misma secuencia de pasos 3 a 9 del flujo automático.
+4. Se ejecuta la misma secuencia de pasos 2 a 7 del flujo automático.
 
 **Flujo de configuración de horarios:**
 
@@ -425,11 +396,9 @@ healthtech/
 │   │   ├── __init__.py
 │   │   ├── scheduler.py         # Planificador de horarios
 │   │   ├── servo_controller.py  # Control PWM del SG90
-│   │   ├── sensor_manager.py    # Lectura del sensor IR y pulsador
-│   │   ├── tts_engine.py        # Síntesis de voz (espeak-ng / Piper)
+│   │   ├── sensor_manager.py    # Lectura del sensor de peso HX711
 │   │   ├── logger.py            # Registro de eventos con timestamp UTC
-│   │   ├── telegram_bot.py      # Notificaciones Telegram
-│   │   └── fault_tolerance.py   # Cola de mensajes pendientes
+│   │   └── fault_tolerance.py   # Cola de eventos pendientes
 │   └── logs/
 │       └── events.log           # Archivo de registro de eventos
 ├── frontend/
@@ -459,10 +428,8 @@ healthtech/
 
 | ID   | Descripción                                                                                              |
 |------|----------------------------------------------------------------------------------------------------------|
-| RF-1 | El sistema debe emitir una alerta de voz sintetizada al menos 60 segundos antes de la dispensación programada. |
 | RF-2 | El sistema debe posicionar automáticamente un carrusel rotativo compuesto por siete compartimentos semanales. |
 | RF-3 | El sistema debe detectar la extracción del medicamento mediante sensor IR o capacitivo.                   |
-| RF-4 | El sistema debe enviar una notificación por Telegram al cuidador en un tiempo inferior a 30 segundos tras la dispensación. |
 | RF-5 | El sistema debe permitir modificación dinámica de horarios sin reiniciar el servicio.                    |
 | RF-6 | El sistema debe registrar todos los eventos con marca temporal UTC.                                       |
 | RF-7 | El sistema debe operar aun cuando exista pérdida temporal de conexión a Internet, almacenando notificaciones pendientes. |
@@ -473,7 +440,6 @@ healthtech/
 |-------|-----------------------------------------------------------------------------------------------|
 | RNF-1 | El sistema deberá mantener una disponibilidad mínima del 99.5%.                              |
 | RNF-2 | El tiempo entre activación del evento y movimiento del servo no deberá superar 200 ms.       |
-| RNF-3 | Las credenciales de Telegram deberán almacenarse de forma segura mediante variables de entorno.|
 | RNF-4 | El software deberá ejecutarse sobre Raspberry Pi OS con Python 3.9 o superior.               |
 | RNF-5 | El sistema deberá consumir menos de 5W en estado de espera.                                  |
 | RNF-6 | El sistema deberá tolerar fallos temporales de red sin pérdida de eventos.                   |
@@ -504,12 +470,6 @@ healthtech/
                      │    │       │                                │
                      │    │       ▼                                │
                      │    │  ┌──────────────────┐                  │
-                     │    │  │ Reproducir       │                  │
-                     │    │  │ alerta TTS       │                  │
-                     │    │  └────────┬─────────┘                  │
-                     │    │           │                             │
-                     │    │           ▼                             │
-                     │    │  ┌──────────────────┐                  │
                      │    │  │ Mover SG90 al    │                  │
                      │    │  │ compartimento    │                  │
                      │    │  │ del día          │                  │
@@ -529,25 +489,16 @@ healthtech/
                      │    │      │            │                    │
                      │    │      └──────┬─────┘                    │
                      │    │             │                           │
-                     │    │             ▼                           │
-                     │    │  ┌──────────────────┐                  │
-                     │    │  │ Enviar Telegram  │                  │
-                     │    │  │ notificación     │                  │
-                     │    │  └────────┬─────────┘                  │
-                     │    │           │                             │
-                     └────┴───────────┴─────────────────────────────┘
+                     └────┴─────────────┴─────────────────────────────┘
 ```
 
 ### 11.2 Descripción de la Secuencia
 
 1. El sistema permanece en espera activa, monitoreando el reloj del sistema contra los horarios configurados.
-2. Al coincidir la hora actual con un horario programado, se reproduce una alerta de voz sintetizada que indica al paciente que debe tomar su medicamento.
-3. El servomotor SG90 recibe la señal PWM y rota el carrusel hasta posicionar el compartimento correspondiente al día actual frente al punto de acceso del usuario.
-4. El sistema queda en espera de la señal del sensor IR o capacitivo que confirme que el medicamento fue retirado.
-5. Si se detecta la extracción, el evento se registra localmente con estado OK y marca temporal UTC. Si transcurre el tiempo de espera sin detección, se registra como FAIL.
-6. Se envía una notificación al cuidador mediante Telegram indicando el resultado del evento.
-7. Si no hay conectividad, la notificación se encola y se reenvía automáticamente al restablecerse la red.
-8. El sistema retorna al ciclo de espera.
+2. El servomotor SG90 recibe la señal PWM y rota el carrusel hasta posicionar el compartimento correspondiente al día actual frente al punto de acceso del usuario.
+3. El sistema queda en espera de la señal del sensor IR o capacitivo que confirme que el medicamento fue retirado.
+4. Si se detecta la extracción, el evento se registra localmente con estado OK y marca temporal UTC. Si transcurre el tiempo de espera sin detección, se registra como FAIL.
+5. El sistema retorna al ciclo de espera.
 
 ---
 
@@ -560,14 +511,14 @@ healthtech/
 sudo apt update && sudo apt upgrade -y
 
 # Instalar dependencias del sistema
-sudo apt install -y python3 python3-pip python3-venv espeak-ng
+sudo apt install -y python3 python3-pip python3-venv python3-lgpio
 
 # Crear entorno virtual
 python3 -m venv venv
 source venv/bin/activate
 
 # Instalar dependencias Python
-pip install fastapi uvicorn RPi.GPIO python-telegram-bot
+pip install fastapi uvicorn gpiozero lgpio
 ```
 
 Archivo `requirements.txt`:
@@ -575,8 +526,8 @@ Archivo `requirements.txt`:
 ```text
 fastapi
 uvicorn
-RPi.GPIO
-python-telegram-bot
+gpiozero
+lgpio
 ```
 
 ### 12.2 Frontend (Máquina de Desarrollo)

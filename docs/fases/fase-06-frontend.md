@@ -27,7 +27,7 @@ El cuidador puede monitorear el sistema, modificar horarios, revisar el historia
 ## Vistas
 
 ### StatusView
-- Muestra: día activo, compartimento actual, próximo evento, estado de conectividad Wi-Fi y Telegram, resultado del último evento (OK/FAIL).
+- Muestra: día activo, compartimento actual, próximo evento, estado de conectividad Wi-Fi, resultado del último evento (OK/FAIL).
 - Se actualiza en tiempo real mediante WebSocket (`/ws/status`).
 - Indicadores visuales de color: verde = OK, rojo = FAIL/desconectado.
 

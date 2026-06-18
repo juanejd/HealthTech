@@ -1,6 +1,6 @@
 # HealthTech — Índice Maestro de Documentación
 
-**Proyecto:** Dispensador Inteligente de Medicamentos Asistido por Voz  
+**Proyecto:** Dispensador Inteligente de Medicamentos  
 **Versión del índice:** 1.0.0  
 **Fecha:** Junio de 2026  
 **Autores:** Stefanía García López · Juan Esteban Jiménez Daza  
@@ -24,10 +24,9 @@
 | Fase | Documento                                      | Descripción                                                         | Dependencias     |
 |------|------------------------------------------------|---------------------------------------------------------------------|------------------|
 | 01   | `fases/fase-01-fundacion.md`                   | Estructura del proyecto, configuración, logging y entorno virtual   | —                |
-| 02   | `fases/fase-02-hardware.md`                    | Control GPIO: servo SG90, sensor IR y pulsador                      | Fase 01          |
-| 03   | `fases/fase-03-logica-dispensacion.md`         | Scheduler, TTS (espeak-ng), tolerancia a fallos                     | Fases 01 y 02    |
-| 04   | `fases/fase-04-comunicacion.md`                | Módulo Telegram Bot para notificaciones al cuidador                 | Fases 01 y 03    |
-| 05   | `fases/fase-05-backend-api.md`                 | API REST FastAPI + WebSocket (endpoints de estado, horarios, logs)  | Fases 01–04      |
+| 02   | `fases/fase-02-hardware.md`                    | Control GPIO: servo FS90R y sensor de peso HX711                    | Fase 01          |
+| 03   | `fases/fase-03-logica-dispensacion.md`         | Scheduler y tolerancia a fallos                                     | Fases 01 y 02    |
+| 05   | `fases/fase-05-backend-api.md`                 | API REST FastAPI + WebSocket (endpoints de estado, horarios, logs)  | Fases 01–03      |
 | 06   | `fases/fase-06-frontend.md`                    | Dashboard React.js: estado, horarios, historial, dispensación manual | Fase 05         |
 
 ---
