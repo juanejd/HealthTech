@@ -8,7 +8,7 @@ from fastapi import APIRouter
 from modules.scheduler import get_current_day_name, get_next_event, get_schedules
 from modules.servo_controller import get_compartment_for_weekday
 from modules.logger import read_events
-from api.routes_dispense import is_busy
+import api.routes_dispense as dispense
 
 router = APIRouter()
 
@@ -40,5 +40,5 @@ def get_status() -> dict:
         "next_event": next_event,
         "last_event": last_event,
         "wifi_connected": _check_wifi(),
-        "is_busy": is_busy,
+        "is_busy": dispense.is_busy,
     }

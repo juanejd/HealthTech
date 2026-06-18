@@ -1,11 +1,11 @@
 function Indicator({ connected, testId }) {
-  const colorClass = connected ? 'indicator-green' : 'indicator-red'
-  return <span className={colorClass} data-testid={testId} />
+  const colorClass = connected ? "indicator-green" : "indicator-red";
+  return <span className={colorClass} data-testid={testId} />;
 }
 
 export default function StatusView({ status }) {
   if (!status) {
-    return <div className="status-loading">Cargando...</div>
+    return <div className="status-loading">Cargando...</div>;
   }
 
   const {
@@ -14,7 +14,7 @@ export default function StatusView({ status }) {
     next_event,
     last_event,
     wifi_connected,
-  } = status
+  } = status;
 
   return (
     <div className="status-view">
@@ -24,19 +24,25 @@ export default function StatusView({ status }) {
         <div className="status-row">
           <span>Wi-Fi:</span>
           <Indicator connected={wifi_connected} testId="wifi-indicator" />
-          <span>{wifi_connected ? 'Conectado' : 'Desconectado'}</span>
+          <span>{wifi_connected ? "Conectado" : "Desconectado"}</span>
         </div>
       </div>
 
       <div className="status-info">
-        <p><strong>Día actual:</strong> {current_day}</p>
-        <p><strong>Compartimento:</strong> {compartment_index}</p>
+        <p>
+          <strong>Día actual:</strong> {current_day}
+        </p>
+        <p>
+          <strong>Compartimento:</strong> {compartment_index}
+        </p>
       </div>
 
       {next_event ? (
         <div className="status-next-event">
           <h3>Próximo evento</h3>
-          <p>{next_event.time} — {next_event.message}</p>
+          <p>
+            {next_event.time} — {next_event.message}
+          </p>
         </div>
       ) : (
         <div className="status-next-event">
@@ -48,17 +54,24 @@ export default function StatusView({ status }) {
       {last_event ? (
         <div className="status-last-event">
           <h3>Último evento</h3>
-          <p><strong>Hora:</strong> {last_event.timestamp}</p>
           <p>
-            <strong>Estado:</strong>{' '}
+            <strong>Hora:</strong> {last_event.timestamp}
+          </p>
+          <p>
+            <strong>Estado:</strong>{" "}
             <span
               data-testid="last-event-status"
-              className={last_event.status === 'OK' ? 'indicator-green' : 'indicator-red'}
+              className={
+                last_event.status === "OK" ? "indicator-green" : "indicator-red"
+              }
             >
               {last_event.status}
             </span>
           </p>
-          <p><strong>Extracción detectada:</strong> {last_event.extraction_detected ? 'Sí' : 'No'}</p>
+          <p>
+            <strong>Extracción detectada:</strong>{" "}
+            {last_event.extraction_detected ? "Sí" : "No"}
+          </p>
         </div>
       ) : (
         <div className="status-last-event">
@@ -67,5 +80,5 @@ export default function StatusView({ status }) {
         </div>
       )}
     </div>
-  )
+  );
 }

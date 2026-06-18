@@ -1,31 +1,31 @@
-import { useState } from 'react'
-import { dispense } from '../services/api'
+import { useState } from "react";
+import { dispense } from "../services/api";
 
 export default function ManualDispense() {
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
   function handleDispenseClick() {
-    setResult(null)
-    setShowConfirm(true)
+    setResult(null);
+    setShowConfirm(true);
   }
 
   function handleCancel() {
-    setShowConfirm(false)
+    setShowConfirm(false);
   }
 
   async function handleConfirm() {
-    setShowConfirm(false)
-    setLoading(true)
-    setResult(null)
+    setShowConfirm(false);
+    setLoading(true);
+    setResult(null);
     try {
-      const data = await dispense()
-      setResult(data)
+      const data = await dispense();
+      setResult(data);
     } catch (err) {
-      setResult({ status: 'FAIL', error: err?.message || 'Error desconocido' })
+      setResult({ status: "FAIL", error: err?.message || "Error desconocido" });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -65,21 +65,30 @@ export default function ManualDispense() {
 
       {result && (
         <div
-          className={`dispense-result ${result.status === 'OK' ? 'result-ok' : 'result-fail'}`}
+          className={`dispense-result ${result.status === "OK" ? "result-ok" : "result-fail"}`}
           role="alert"
         >
-          <p><strong>Resultado:</strong> {result.status}</p>
+          <p>
+            <strong>Resultado:</strong> {result.status}
+          </p>
           {result.extraction_detected !== undefined && (
-            <p><strong>Extracción detectada:</strong> {result.extraction_detected ? 'Sí' : 'No'}</p>
+            <p>
+              <strong>Extracción detectada:</strong>{" "}
+              {result.extraction_detected ? "Sí" : "No"}
+            </p>
           )}
           {result.timestamp && (
-            <p><strong>Hora:</strong> {result.timestamp}</p>
+            <p>
+              <strong>Hora:</strong> {result.timestamp}
+            </p>
           )}
           {result.error && (
-            <p><strong>Error:</strong> {result.error}</p>
+            <p>
+              <strong>Error:</strong> {result.error}
+            </p>
           )}
         </div>
       )}
     </div>
-  )
+  );
 }

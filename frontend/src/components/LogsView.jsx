@@ -5,7 +5,7 @@ export default function LogsView({ events }) {
         <h2>Registro de eventos</h2>
         <p className="logs-empty">No hay eventos registrados.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -29,11 +29,15 @@ export default function LogsView({ events }) {
                 <td>{event.timestamp}</td>
                 <td>{event.type}</td>
                 <td>
-                  <span className={event.status === 'OK' ? 'status-ok' : 'status-fail'}>
+                  <span
+                    className={
+                      event.status === "OK" ? "status-ok" : "status-fail"
+                    }
+                  >
                     {event.status}
                   </span>
                 </td>
-                <td>{event.extraction_detected ? 'Sí' : 'No'}</td>
+                <td>{event.extraction_detected ? "Sí" : "No"}</td>
                 <td>{event.day}</td>
                 <td>{event.compartment_index}</td>
               </tr>
@@ -42,5 +46,5 @@ export default function LogsView({ events }) {
         </table>
       </div>
     </div>
-  )
+  );
 }
