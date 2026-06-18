@@ -31,14 +31,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import statistics
 import time
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Hardware import guard
-# ---------------------------------------------------------------------------
 
 try:
     import lgpio
@@ -94,17 +93,29 @@ CALIBRATION_FILE: Path = (
     Path(__file__).parent.parent / "logs" / "hx711_calibration.json"
 )
 
-# ---------------------------------------------------------------------------
-# Module state
-# ---------------------------------------------------------------------------
+
+HX711_READ_RETRIES: int = 2
+
+
+FILTER_SAMPLES: int = 5
+POLL_FILTER_SAMPLES: int = 3
+
+# MAD (Median Absolute Deviation) outlier gate — threshold in units of MAD.
+FILTER_MAD_THRESHOLD: float = 3.0
+
+# Set to True to enable MAD outlier rejection inside _read_filtered().
+FILTER_MAD_ENABLED: bool = False
+
 
 _tare_offset: float = 0.0
 
-# ---------------------------------------------------------------------------
-# Internal HX711 bit-bang read
-# ---------------------------------------------------------------------------
+_calibration_loaded_from_file: bool = False
 
-_MOCK_RAW_VALUE: float = 500000.0  # stable mock raw reading
+
+_MOCK_RAW_VALUE: float = 500000.0
+_MOCK_DISPENSE_CONFIRMED: bool = os.environ.get(
+    "HEALTHTECH_MOCK_DISPENSE", "1"
+).strip().lower() not in ("0", "false", "no")
 
 # Lazily-opened lgpio chip handle, reused across reads. Released by cleanup().
 _chip_handle = None
@@ -128,42 +139,100 @@ def _ensure_handle() -> int:
 
 
 def _read_hx711_raw() -> float:
-    """
-    Read one 24-bit value from the HX711 via a direct lgpio bit-bang.
+    """Read one 24-bit sample from the HX711 via direct lgpio bit-bang.
 
-    gpiozero's DigitalInputDevice/DigitalOutputDevice were too slow: each call
-    took ~100µs, so PD_SCK stayed HIGH >60µs and the HX711 powered down mid-read,
-    returning garbage (~0). lgpio's gpio_read/gpio_write are fast enough.
+    This is the single-sample primitive. Higher-level callers use
+    _read_filtered() which aggregates multiple samples via median.
 
-    Returns the signed 24-bit reading as a float. In mock mode (dev PC, no lgpio)
-    returns a stable constant. On a real DRDY timeout raises HX711Error rather
-    than masking the fault with a fake value.
+    On a transient DRDY timeout the read is retried up to HX711_READ_RETRIES
+    times (2), for a total of 3 attempts. Each retry is logged at WARNING level.
+    If the budget is exhausted the final failure is logged at ERROR and
+    HX711Error is raised — never returns a fake value on hardware failure.
+
+    In mock mode (no lgpio) returns _MOCK_RAW_VALUE immediately.
     """
     if not HARDWARE_AVAILABLE:
         return _MOCK_RAW_VALUE
 
     handle = _ensure_handle()
 
-    # Wait for DRDY: the HX711 holds DOUT HIGH until a conversion is ready.
-    deadline = time.monotonic() + DRDY_TIMEOUT_S
-    while lgpio.gpio_read(handle, HX711_DT_PIN) == 1:
-        if time.monotonic() > deadline:
-            raise HX711Error("DRDY timeout — HX711 not responding")
-        time.sleep(0.001)
+    for attempt in range(1 + HX711_READ_RETRIES):
+        # Wait for DRDY: HX711 holds DOUT HIGH until conversion is ready.
+        deadline = time.monotonic() + DRDY_TIMEOUT_S
+        while lgpio.gpio_read(handle, HX711_DT_PIN) == 1:
+            if time.monotonic() > deadline:
+                if attempt < HX711_READ_RETRIES:
+                    logger.warning(
+                        "HX711 DRDY timeout on attempt %d/%d — retrying",
+                        attempt + 1,
+                        1 + HX711_READ_RETRIES,
+                    )
+                    break  # retry the outer loop
+                else:
+                    logger.error(
+                        "HX711 DRDY timeout — all %d attempts exhausted",
+                        1 + HX711_READ_RETRIES,
+                    )
+                    raise HX711Error(
+                        f"DRDY timeout after {1 + HX711_READ_RETRIES} attempts"
+                    )
+            time.sleep(0.001)
+        else:
+            # DRDY went LOW — proceed with clock-in.
+            raw = 0
+            for _ in range(24):
+                lgpio.gpio_write(handle, HX711_SCK_PIN, 1)
+                bit = lgpio.gpio_read(handle, HX711_DT_PIN)
+                lgpio.gpio_write(handle, HX711_SCK_PIN, 0)
+                raw = (raw << 1) | bit
 
-    # Clock in 24 bits, MSB first.
-    raw = 0
-    for _ in range(24):
-        lgpio.gpio_write(handle, HX711_SCK_PIN, 1)
-        bit = lgpio.gpio_read(handle, HX711_DT_PIN)
-        lgpio.gpio_write(handle, HX711_SCK_PIN, 0)
-        raw = (raw << 1) | bit
+            # 25th pulse selects channel A, gain 128 for the next conversion.
+            lgpio.gpio_write(handle, HX711_SCK_PIN, 1)
+            lgpio.gpio_write(handle, HX711_SCK_PIN, 0)
 
-    # 25th pulse selects channel A, gain 128 for the next conversion.
-    lgpio.gpio_write(handle, HX711_SCK_PIN, 1)
-    lgpio.gpio_write(handle, HX711_SCK_PIN, 0)
+            return float(_to_signed_24(raw))
 
-    return float(_to_signed_24(raw))
+    # Should not be reached, but satisfies type checkers.
+    raise HX711Error("_read_hx711_raw: exhausted retry budget")
+
+
+# ---------------------------------------------------------------------------
+# Filtered read (D5)
+# ---------------------------------------------------------------------------
+
+
+def _read_filtered(samples: int = FILTER_SAMPLES) -> float:
+    """Return a median-filtered raw reading from the HX711.
+
+    Collects `samples` single-sample reads via _read_hx711_raw() and returns
+    their median. When FILTER_MAD_ENABLED is True, samples that deviate from
+    the median by more than FILTER_MAD_THRESHOLD * MAD are discarded before
+    computing the final median (optional MAD outlier rejection).
+
+    Args:
+        samples: Number of raw samples to collect. Use FILTER_SAMPLES (5) for
+                 one-shot operations (tare, baseline); POLL_FILTER_SAMPLES (3)
+                 for the time-sensitive dispense poll loop.
+
+    Returns:
+        Median of the (filtered) sample set as a float.
+
+    Raises:
+        HX711Error: If any underlying _read_hx711_raw() call fails after retries.
+    """
+    readings = [_read_hx711_raw() for _ in range(samples)]
+
+    if FILTER_MAD_ENABLED and len(readings) >= 3:
+        med = statistics.median(readings)
+        # Median Absolute Deviation
+        mad = statistics.median([abs(x - med) for x in readings])
+        if mad > 0:
+            readings = [
+                x for x in readings if abs(x - med) <= FILTER_MAD_THRESHOLD * mad
+            ]
+        # Fallback: if all samples are identical (mad == 0), keep all.
+
+    return statistics.median(readings)
 
 
 # ---------------------------------------------------------------------------
@@ -173,12 +242,13 @@ def _read_hx711_raw() -> float:
 
 def tare() -> None:
     """
-    Tare the scale: record the current raw reading as the zero baseline.
+    Tare the scale: record the median-filtered raw reading as the zero baseline.
 
     Call with the empty dispensing cup in place before each dispense cycle.
+    Uses FILTER_SAMPLES (5) reads for a robust baseline.
     """
     global _tare_offset
-    _tare_offset = _read_hx711_raw()
+    _tare_offset = _read_filtered(FILTER_SAMPLES)
     logger.info("Scale tared (offset=%.0f)", _tare_offset)
 
 
@@ -186,10 +256,12 @@ def read_weight() -> float:
     """
     Return the current weight in grams (calibrated, tare-corrected).
 
+    Uses _read_filtered() for noise reduction. Call FILTER_SAMPLES via tare first.
+
     Returns:
         Weight in grams as a float.  Positive = weight above tare baseline.
     """
-    raw = _read_hx711_raw()
+    raw = _read_filtered(FILTER_SAMPLES)
     grams = (raw - _tare_offset) * CALIBRATION_FACTOR
     logger.debug("HX711 raw=%.0f tare=%.0f weight=%.2f g", raw, _tare_offset, grams)
     return grams
@@ -199,27 +271,30 @@ def read_weight_raw() -> float:
     """
     Return the tare-corrected raw ADC delta (counts), WITHOUT the calibration factor.
 
-    This is the value the calibration routine divides a known reference weight by
-    to compute CALIBRATION_FACTOR. Use read_weight() for grams in normal operation.
+    Uses FILTER_SAMPLES reads for a cleaner calibration reference. Use read_weight()
+    for gram values in normal operation.
     """
-    return _read_hx711_raw() - _tare_offset
+    return _read_filtered(FILTER_SAMPLES) - _tare_offset
 
 
 def load_calibration() -> float:
-    """
-    Load the persisted calibration factor from CALIBRATION_FILE.
 
-    Returns DEFAULT_CALIBRATION_FACTOR if the file is missing or unreadable.
-    """
+    global _calibration_loaded_from_file
     try:
         data = json.loads(CALIBRATION_FILE.read_text(encoding="utf-8"))
-        return float(data["calibration_factor"])
+        factor = float(data["calibration_factor"])
+        _calibration_loaded_from_file = True
+        return factor
     except (FileNotFoundError, json.JSONDecodeError, KeyError, ValueError, TypeError):
+        _calibration_loaded_from_file = False
         return DEFAULT_CALIBRATION_FACTOR
 
 
+def is_calibrated() -> bool:
+    return _calibration_loaded_from_file
+
+
 def save_calibration(factor: float) -> None:
-    """Persist the calibration factor to CALIBRATION_FILE."""
     try:
         CALIBRATION_FILE.parent.mkdir(parents=True, exist_ok=True)
         CALIBRATION_FILE.write_text(
@@ -230,11 +305,7 @@ def save_calibration(factor: float) -> None:
 
 
 def set_calibration_factor(factor: float) -> None:
-    """
-    Update the active calibration factor and persist it to disk.
 
-    Subsequent read_weight() calls use the new factor immediately.
-    """
     global CALIBRATION_FACTOR
     CALIBRATION_FACTOR = factor
     save_calibration(factor)
@@ -242,7 +313,6 @@ def set_calibration_factor(factor: float) -> None:
 
 
 def cleanup() -> None:
-    """Release the lgpio chip handle. Call on application shutdown."""
     global _chip_handle
     if _chip_handle is not None and lgpio is not None:
         try:
@@ -253,8 +323,18 @@ def cleanup() -> None:
             _chip_handle = None
 
 
-# Load any persisted calibration at import time (defaults to 1.0 if absent).
 CALIBRATION_FACTOR = load_calibration()
+if not _calibration_loaded_from_file:
+    logger.warning(
+        "HX711 not calibrated — weight readings are in raw ADC counts. "
+        "Run scripts/hx711_calibrate.py on real hardware to generate %s.",
+        CALIBRATION_FILE,
+    )
+
+
+def set_mock_dispense_confirmed(value: bool) -> None:
+    global _MOCK_DISPENSE_CONFIRMED
+    _MOCK_DISPENSE_CONFIRMED = value
 
 
 def wait_for_dispense_confirmation(
@@ -262,25 +342,33 @@ def wait_for_dispense_confirmation(
     drop_threshold: float = DROP_THRESHOLD_G,
 ) -> bool:
     if not HARDWARE_AVAILABLE:
-        # Mock: simulate pill falling after a brief pause
         time.sleep(0.05)
-        logger.info("Mock sensor: dispense confirmed (mock mode)")
-        return True
-
-    baseline = read_weight()
+        outcome = _MOCK_DISPENSE_CONFIRMED
+        logger.info(
+            "Mock sensor: dispense %s (mock mode)",
+            "confirmed" if outcome else "not confirmed",
+        )
+        return outcome
+    if not _calibration_loaded_from_file:
+        logger.warning(
+            "Dispense baseline read while uncalibrated — weight values are raw ADC counts"
+        )
+    baseline_raw = _read_filtered(FILTER_SAMPLES)
+    baseline = (baseline_raw - _tare_offset) * CALIBRATION_FACTOR
     logger.info(
-        "Waiting for dispense (baseline=%.1f g, threshold=%.1f g, timeout=%ss)",
-        baseline,
+        "Waiting for dispense (baseline=%.1f raw, threshold=%.1f g, timeout=%ss)",
+        baseline_raw,
         drop_threshold,
         timeout_seconds,
     )
 
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        current = read_weight()
+        current_raw = _read_filtered(POLL_FILTER_SAMPLES)
+        current = (current_raw - _tare_offset) * CALIBRATION_FACTOR
         drop = baseline - current  # positive when weight decreases
         if drop >= drop_threshold:
-            logger.info("Dispense confirmed (drop=%.1f g)", drop)
+            logger.info("Dispense confirmed (drop=%.1f)", drop)
             return True
         time.sleep(POLL_INTERVAL_S)
 

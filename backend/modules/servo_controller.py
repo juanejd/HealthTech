@@ -220,8 +220,23 @@ def cleanup() -> None:
 
 
 def get_compartment_for_weekday(weekday: int) -> int:
+    """Map a Python weekday (0=Monday … 6=Sunday) to a carousel compartment index.
 
-    return weekday
+    Compartment 0 is reserved for the home/drop slot; day compartments occupy
+    positions 1–7 (Monday=1, …, Sunday=7).
+
+    Args:
+        weekday: Value returned by datetime.weekday() — must be in [0, 6].
+
+    Returns:
+        Carousel compartment index in [1, 7].
+
+    Raises:
+        ValueError: If weekday is outside the valid range [0, 6].
+    """
+    if not 0 <= weekday <= 6:
+        raise ValueError(f"weekday must be in [0, 6], got {weekday}")
+    return weekday + 1
 
 
 def move_to_compartment(day_index: int) -> None:
