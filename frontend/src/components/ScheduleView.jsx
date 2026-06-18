@@ -16,47 +16,72 @@ const DAY_NAMES = [
 
 function ScheduleRow({ schedule, index, onChange }) {
   return (
-    <div className="schedule-row">
-      <input
-        type="text"
-        value={schedule.time}
-        onChange={(e) => onChange(index, "time", e.target.value)}
-        placeholder="HH:MM"
-        aria-label={`Hora del horario ${index + 1}`}
-      />
-      <input
-        type="text"
-        value={schedule.message}
-        onChange={(e) => onChange(index, "message", e.target.value)}
-        placeholder="Mensaje"
-        aria-label={`Mensaje del horario ${index + 1}`}
-      />
-      <label>
+    <div className="care-card space-y-4">
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="font-display text-lg font-medium text-care"
+        >
+          {schedule.time || "—:—"}
+        </span>
+        <label className="ml-auto flex items-center gap-2 text-sm font-medium text-ink-soft">
+          <input
+            type="checkbox"
+            className="size-5 accent-[var(--color-care)]"
+            checked={schedule.enabled}
+            onChange={(e) => onChange(index, "enabled", e.target.checked)}
+          />
+          Activo
+        </label>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
         <input
-          type="checkbox"
-          checked={schedule.enabled}
-          onChange={(e) => onChange(index, "enabled", e.target.checked)}
+          type="text"
+          className="care-input max-w-40"
+          value={schedule.time}
+          onChange={(e) => onChange(index, "time", e.target.value)}
+          placeholder="HH:MM"
+          aria-label={`Hora del horario ${index + 1}`}
         />
-        Activo
-      </label>
-      <div className="schedule-days">
-        {DAY_NAMES.map((day) => (
-          <label key={day}>
-            <input
-              type="checkbox"
-              checked={
-                Array.isArray(schedule.days) && schedule.days.includes(day)
-              }
-              onChange={(e) => {
-                const newDays = e.target.checked
-                  ? [...schedule.days, day]
-                  : schedule.days.filter((d) => d !== day);
-                onChange(index, "days", newDays);
-              }}
-            />
-            {day}
-          </label>
-        ))}
+        <input
+          type="text"
+          className="care-input"
+          value={schedule.message}
+          onChange={(e) => onChange(index, "message", e.target.value)}
+          placeholder="Mensaje"
+          aria-label={`Mensaje del horario ${index + 1}`}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {DAY_NAMES.map((day) => {
+          const active =
+            Array.isArray(schedule.days) && schedule.days.includes(day);
+          return (
+            <label
+              key={day}
+              className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium capitalize transition-colors ${
+                active
+                  ? "border-care bg-[color-mix(in_srgb,var(--color-care)_10%,var(--color-surface))] text-care"
+                  : "border-line bg-surface text-ink-soft hover:border-ink-soft"
+              }`}
+            >
+              <input
+                type="checkbox"
+                className="size-5 accent-[var(--color-care)]"
+                checked={active}
+                onChange={(e) => {
+                  const newDays = e.target.checked
+                    ? [...schedule.days, day]
+                    : schedule.days.filter((d) => d !== day);
+                  onChange(index, "days", newDays);
+                }}
+              />
+              {day}
+            </label>
+          );
+        })}
       </div>
     </div>
   );
@@ -107,16 +132,19 @@ export default function ScheduleView({
   }
 
   return (
-    <div className="schedule-view">
-      <h2>Horarios</h2>
+    <div className="space-y-5">
+      <h2 className="font-display text-xl font-medium text-ink">Horarios</h2>
 
       {error && (
-        <div className="schedule-error" role="alert">
+        <div
+          className="rounded-xl border border-[var(--color-fail)] bg-[var(--color-fail-soft)] px-4 py-3 text-[var(--color-fail)]"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
-      <div className="schedule-list">
+      <div className="space-y-4">
         {schedules.map((schedule, index) => (
           <ScheduleRow
             key={index}
@@ -127,7 +155,7 @@ export default function ScheduleView({
         ))}
       </div>
 
-      <button onClick={handleSave} disabled={saving} className="btn-primary">
+      <button onClick={handleSave} disabled={saving} className="care-btn">
         {saving ? "Guardando..." : "Guardar"}
       </button>
     </div>

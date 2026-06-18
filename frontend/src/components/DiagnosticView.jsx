@@ -68,86 +68,90 @@ export default function DiagnosticView({ status }) {
   };
 
   return (
-    <div className="diagnostic-view">
-      <h2>Panel de Diagnóstico</h2>
-      <p>Control manual del hardware.</p>
-
-      <div
-        className="diagnostic-controls"
-        style={{
-          display: "flex",
-          gap: "1rem",
-          marginTop: "1rem",
-          marginBottom: "1rem",
-        }}
-      >
-        <button
-          className="primary-btn"
-          onClick={handleStep}
-          disabled={stepLoading}
-        >
-          {stepLoading ? "Avanzando..." : "Avanzar Compartimiento"}
-        </button>
-        <button
-          className="primary-btn"
-          onClick={handleHome}
-          disabled={homeLoading}
-        >
-          {homeLoading ? "Reseteando..." : "Resetear Posición (Home)"}
-        </button>
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-display text-xl font-medium text-ink">
+          Panel de Diagnóstico
+        </h2>
+        <p className="mt-1 text-base text-ink-soft">
+          Control manual del hardware.
+        </p>
       </div>
 
-      {servoError && (
-        <p style={{ color: "#c0392b", marginBottom: "1rem" }}>{servoError}</p>
-      )}
-
-      {position !== null && !servoError && (
-        <p style={{ marginBottom: "1rem" }}>
-          <strong>Posición actual:</strong> {position}
-        </p>
-      )}
-
-      <div
-        className="weight-section"
-        style={{
-          marginTop: "1rem",
-          padding: "1rem",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
-          display: "inline-block",
-        }}
-      >
-        <div style={{ marginBottom: "0.5rem" }}>
+      <section className="care-card space-y-4">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
+          Carrusel
+        </h3>
+        <div className="flex flex-col gap-3 sm:flex-row">
           <button
-            className="primary-btn"
-            onClick={handleReadWeight}
-            disabled={weightLoading}
+            className="care-btn-ghost"
+            onClick={handleStep}
+            disabled={stepLoading}
           >
-            {weightLoading ? "Leyendo..." : "Leer Peso"}
+            {stepLoading ? "Avanzando..." : "Avanzar Compartimiento"}
+          </button>
+          <button
+            className="care-btn-ghost"
+            onClick={handleHome}
+            disabled={homeLoading}
+          >
+            {homeLoading ? "Reseteando..." : "Resetear Posición (Home)"}
           </button>
         </div>
 
-        {weightError && <p style={{ color: "#c0392b" }}>{weightError}</p>}
+        {servoError && (
+          <p className="text-[var(--color-fail)]">{servoError}</p>
+        )}
+
+        {position !== null && !servoError && (
+          <p className="text-base text-ink">
+            <span className="text-ink-soft">Posición actual:</span>{" "}
+            <span className="font-mono">{position}</span>
+          </p>
+        )}
+      </section>
+
+      <section className="care-card space-y-4">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
+          Sensor de peso
+        </h3>
+        <button
+          className="care-btn-ghost"
+          onClick={handleReadWeight}
+          disabled={weightLoading}
+        >
+          {weightLoading ? "Leyendo..." : "Leer Peso"}
+        </button>
+
+        {weightError && (
+          <p className="text-[var(--color-fail)]">{weightError}</p>
+        )}
 
         {weightG !== null && !weightError && (
-          <>
-            <p>
-              <strong>Peso actual:</strong> {weightG.toFixed(2)} g
-            </p>
+          <div className="space-y-3">
+            <div className="rounded-xl border border-line bg-paper px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft">
+                Peso actual
+              </p>
+              <p className="mt-1 font-mono text-3xl font-medium text-ink">
+                {weightG.toFixed(2)}
+                <span className="ml-1 text-lg text-ink-soft">g</span>
+              </p>
+            </div>
             {!calibrated && (
-              <p style={{ color: "#e67e22", fontWeight: "bold" }}>
+              <p className="font-medium text-honey">
                 Sensor no calibrado — la lectura está en cuentas ADC crudas.
               </p>
             )}
             {isBusy && (
-              <p style={{ color: "#888" }}>
+              <p className="text-ink-soft">
                 Nota: hay una dispensa en curso — la lectura puede estar
                 afectada.
               </p>
             )}
-          </>
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

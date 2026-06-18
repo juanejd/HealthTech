@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens — derived from the smart medication dispenser brief.  */
+/* Warm paper + deep teal-petrol care color + amber attention accent.  */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-paper: #f4f1e9;
+  --color-surface: #fcfaf4;
+  --color-ink: #15302b;
+  --color-ink-soft: #4a5d58;
+  --color-care: #0e6e5c;
+  --color-care-deep: #0a4e41;
+  --color-honey: #e2a33c;
+  --color-line: #e4dfd2;
+
+  /* Semantic states kept distinct from the teal brand for accessibility */
+  --color-ok: #1f8a4c;
+  --color-ok-soft: #e7f2e9;
+  --color-fail: #c0392b;
+  --color-fail-soft: #f7e8e6;
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+/* Base — 18px body for legibility (elderly + caregiver audience) */
+html {
+  font-size: 18px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Visible keyboard focus everywhere — accessibility is a design decision */
+:focus-visible {
+  outline: 3px solid var(--color-care);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect reduced motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Small component classes — used where utility soup hurts readability */
+/* ------------------------------------------------------------------ */
+@layer components {
+  /* Indicator dots — class names MUST contain "green"/"red" (tests assert) */
+  .indicator-green {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+    background-color: var(--color-ok);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-ok) 18%, transparent);
+  }
+
+  .indicator-red {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+    background-color: var(--color-fail);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-fail) 18%, transparent);
+  }
+
+  /* Calm card surface */
+  .care-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+
+  /* Primary action — the teal care button */
+  .care-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.75rem;
+    background-color: var(--color-care);
+    color: var(--color-surface);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.18s ease;
+  }
+
+  .care-btn:hover:not(:disabled) {
+    background-color: var(--color-care-deep);
+  }
+
+  .care-btn:disabled {
+    background-color: color-mix(in srgb, var(--color-care) 45%, var(--color-paper));
+    cursor: not-allowed;
+  }
+
+  /* Secondary / quiet action */
+  .care-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+  }
+
+  .care-btn-ghost:hover:not(:disabled) {
+    border-color: var(--color-ink-soft);
+    background-color: var(--color-paper);
+  }
+
+  /* Text input shared treatment */
+  .care-input {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.625rem;
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+  }
+
+  .care-input::placeholder {
+    color: color-mix(in srgb, var(--color-ink-soft) 65%, transparent);
+  }
+
+  .care-input:focus {
+    outline: 3px solid var(--color-care);
+    outline-offset: 1px;
+    border-color: var(--color-care);
+  }
+}
