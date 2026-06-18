@@ -10,6 +10,7 @@ from api.routes_status import router as status_router
 from api.routes_schedules import router as schedules_router
 from api.routes_logs import router as logs_router
 from api.routes_dispense import router as dispense_router
+from api.routes_diagnostic import router as diagnostic_router
 from api.websocket import router as ws_router
 from modules.scheduler import reload_schedules
 
@@ -36,4 +37,5 @@ app.include_router(status_router, prefix="/api")
 app.include_router(schedules_router, prefix="/api")
 app.include_router(logs_router, prefix="/api")
 app.include_router(dispense_router, prefix="/api")
+app.include_router(diagnostic_router, prefix="/api/diagnostic")
 app.include_router(ws_router)

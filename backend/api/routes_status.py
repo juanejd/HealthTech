@@ -8,18 +8,18 @@ from fastapi import APIRouter
 from modules.scheduler import get_current_day_name, get_next_event, get_schedules
 from modules.servo_controller import get_compartment_for_weekday
 from modules.logger import read_events
+from api.routes_dispense import is_busy
 
 router = APIRouter()
 
 
 def _check_wifi() -> bool:
-    """Check internet connectivity via DNS probe."""
     try:
         socket.setdefaulttimeout(2)
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("8.8.8.8", 53))
         return True
     except Exception:
-        return True  # Return True in dev/test environments
+        return True
 
 
 @router.get("/status")
@@ -40,4 +40,5 @@ def get_status() -> dict:
         "next_event": next_event,
         "last_event": last_event,
         "wifi_connected": _check_wifi(),
+        "is_busy": is_busy,
     }

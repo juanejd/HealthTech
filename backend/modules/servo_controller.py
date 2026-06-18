@@ -32,10 +32,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Hardware import guard
-# ---------------------------------------------------------------------------
-
 try:
     from gpiozero import Servo
 
@@ -61,13 +57,11 @@ STOP_VALUE: float = 0.0
 # carousel rotates the wrong way.
 DIRECTION: float = 1.0
 
-# Speed fraction applied to DIRECTION.  1.0 = full speed.
 STEP_SPEED: float = 1.0
 
-# How long to run the servo per 45° step.  Adjust until one step ≈ 45°.
+# 45 grados
 STEP_DURATION_S: float = 0.25
 
-# Total number of carousel positions (7 day compartments + 1 home/drop slot).
 NUM_POSITIONS: int = 8
 
 # ---------------------------------------------------------------------------
@@ -104,10 +98,6 @@ def _get_servo() -> "Servo | None":
         logger.error("Failed to initialize servo on GPIO%d: %s", SERVO_GPIO_PIN, exc)
         return None
 
-
-# ---------------------------------------------------------------------------
-# Module initialisation — load persisted position
-# ---------------------------------------------------------------------------
 
 _position = _load_position()
 
@@ -207,7 +197,6 @@ def advance_to_compartment(target_index: int) -> None:
 
 
 def cleanup() -> None:
-    """Release GPIO resources.  Call on application shutdown."""
     if HARDWARE_AVAILABLE:
         try:
             from gpiozero import Device

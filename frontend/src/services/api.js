@@ -38,6 +38,25 @@ export async function dispense() {
   return response.json()
 }
 
+export async function fetchDiagnosticStep() {
+  const response = await fetch(`${BASE_URL}/api/diagnostic/step`, {
+    method: 'POST',
+  })
+  return response.json()
+}
+
+export async function fetchDiagnosticHome() {
+  const response = await fetch(`${BASE_URL}/api/diagnostic/home`, {
+    method: 'POST',
+  })
+  return response.json()
+}
+
+export async function fetchDiagnosticWeight() {
+  const response = await fetch(`${BASE_URL}/api/diagnostic/weight`)
+  return response.json()
+}
+
 export function createWebSocket(onMessage, onOpen, onClose) {
   const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/ws/status'
   let ws

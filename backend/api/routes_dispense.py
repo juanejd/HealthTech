@@ -14,6 +14,8 @@ from api.websocket import manager
 
 router = APIRouter()
 
+is_busy = False
+
 
 async def _broadcast_status(result: dict) -> None:
     """Broadcast dispense result to all WebSocket clients."""
@@ -32,30 +34,42 @@ def _run_dispense_hardware(compartment_index: int) -> bool:
 
 @router.post("/dispense")
 async def post_dispense(background_tasks: BackgroundTasks) -> dict:
-    now_utc = datetime.now(timezone.utc)
-    weekday = now_utc.weekday()
-    day_name = get_current_day_name()
-    compartment_index = get_compartment_for_weekday(weekday)
-    timestamp = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    global is_busy
+    is_busy = True
 
     try:
-        dispense_confirmed = await run_in_threadpool(_run_dispense_hardware, compartment_index)
-        status = "OK" if dispense_confirmed else "FAIL"
-    except HX711Error:
-        dispense_confirmed = False
-        status = "FAIL"
+        now_utc = datetime.now(timezone.utc)
+        weekday = now_utc.weekday()
+        day_name = get_current_day_name()
+        compartment_index = get_compartment_for_weekday(weekday)
+        timestamp = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    log_event("dispense", status, dispense_confirmed, day_name, compartment_index)
+        try:
+            dispense_confirmed = await run_in_threadpool(
+                _run_dispense_hardware, compartment_index
+            )
+            status = "OK" if dispense_confirmed else "FAIL"
+        except HX711Error:
+            dispense_confirmed = False
+            status = "FAIL"
 
-    result = {
-        "status": status,
-        "extraction_detected": dispense_confirmed,
-        "timestamp": timestamp,
-    }
+        log_event("dispense", status, dispense_confirmed, day_name, compartment_index)
 
-    notification = {**result, "day": day_name, "compartment_index": compartment_index}
-    enqueue(notification)
+        result = {
+            "status": status,
+            "extraction_detected": dispense_confirmed,
+            "timestamp": timestamp,
+        }
 
-    background_tasks.add_task(_broadcast_status, result)
+        notification = {
+            **result,
+            "day": day_name,
+            "compartment_index": compartment_index,
+        }
+        enqueue(notification)
 
-    return result
+        background_tasks.add_task(_broadcast_status, result)
+
+        return result
+    finally:
+        is_busy = False

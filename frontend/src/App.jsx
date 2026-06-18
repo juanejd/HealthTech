@@ -5,12 +5,14 @@ import StatusView from './components/StatusView'
 import ScheduleView from './components/ScheduleView'
 import LogsView from './components/LogsView'
 import ManualDispense from './components/ManualDispense'
+import DiagnosticView from './components/DiagnosticView'
 
 const TABS = [
   { id: 'status', label: 'Estado' },
   { id: 'schedules', label: 'Horarios' },
   { id: 'logs', label: 'Registros' },
   { id: 'dispense', label: 'Dispensar' },
+  { id: 'diagnostic', label: 'Diagnóstico' },
 ]
 
 export default function App() {
@@ -102,6 +104,7 @@ export default function App() {
         )}
         {activeTab === 'logs' && <LogsView events={logs} />}
         {activeTab === 'dispense' && <ManualDispense />}
+        {activeTab === 'diagnostic' && <DiagnosticView status={status} />}
       </div>
     </div>
   )
