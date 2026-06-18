@@ -42,3 +42,20 @@ async def weight():
             status_code=503,
             detail={"status": "error", "detail": "sensor_unavailable"},
         )
+
+
+@router.post("/tare")
+async def tare():
+    # Never tare mid-dispense: the dispense confirmation reads a baseline and
+    # watches for a weight drop. Re-zeroing while that runs would corrupt it.
+    _reject_if_busy()
+    await run_in_threadpool(sensor_manager.tare)
+    try:
+        weight_g = await run_in_threadpool(sensor_manager.read_weight)
+        calibrated = sensor_manager.is_calibrated()
+        return {"status": "ok", "weight_g": weight_g, "calibrated": calibrated}
+    except HX711Error:
+        raise HTTPException(
+            status_code=503,
+            detail={"status": "error", "detail": "sensor_unavailable"},
+        )

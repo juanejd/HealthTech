@@ -70,6 +70,15 @@ export async function readWeight() {
   return body;
 }
 
+export async function tareScale() {
+  const response = await fetch(`${BASE_URL}/api/diagnostic/tare`, {
+    method: "POST",
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) _throwOnError(response, body);
+  return body;
+}
+
 // Legacy aliases kept for backward compatibility
 export const fetchDiagnosticStep = stepServo;
 export const fetchDiagnosticHome = homeServo;
