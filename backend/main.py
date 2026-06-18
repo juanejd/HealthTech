@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from api.routes_dispense import router as dispense_router
 from api.routes_diagnostic import router as diagnostic_router
 from api.websocket import router as ws_router
 from modules.scheduler import reload_schedules
+from modules import auto_dispenser
 
 
 @asynccontextmanager
@@ -20,7 +22,11 @@ async def lifespan(app: FastAPI):
     logs_dir = Path(__file__).parent / "logs"
     logs_dir.mkdir(exist_ok=True)
     reload_schedules()
-    yield
+    auto_dispenser.start(asyncio.get_running_loop())
+    try:
+        yield
+    finally:
+        auto_dispenser.shutdown()
 
 
 app = FastAPI(title="HealthTech API", lifespan=lifespan)

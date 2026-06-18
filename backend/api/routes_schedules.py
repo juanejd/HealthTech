@@ -9,6 +9,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, field_validator
 
 from modules.scheduler import reload_schedules
+from modules import auto_dispenser
 
 router = APIRouter()
 
@@ -53,4 +54,5 @@ def put_schedules(payload: SchedulesPayload) -> dict:
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     reload_schedules()
+    auto_dispenser.reschedule_jobs()
     return data

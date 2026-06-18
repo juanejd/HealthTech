@@ -32,8 +32,7 @@ def _run_dispense_hardware(compartment_index: int) -> bool:
     return wait_for_dispense_confirmation()
 
 
-@router.post("/dispense")
-async def post_dispense(background_tasks: BackgroundTasks) -> dict:
+def perform_dispense_cycle() -> dict:
     global is_busy
     is_busy = True
 
@@ -45,9 +44,7 @@ async def post_dispense(background_tasks: BackgroundTasks) -> dict:
         timestamp = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         try:
-            dispense_confirmed = await run_in_threadpool(
-                _run_dispense_hardware, compartment_index
-            )
+            dispense_confirmed = _run_dispense_hardware(compartment_index)
             status = "OK" if dispense_confirmed else "FAIL"
         except HX711Error:
             dispense_confirmed = False
@@ -68,8 +65,13 @@ async def post_dispense(background_tasks: BackgroundTasks) -> dict:
         }
         enqueue(notification)
 
-        background_tasks.add_task(_broadcast_status, result)
-
         return result
     finally:
         is_busy = False
+
+
+@router.post("/dispense")
+async def post_dispense(background_tasks: BackgroundTasks) -> dict:
+    result = await run_in_threadpool(perform_dispense_cycle)
+    background_tasks.add_task(_broadcast_status, result)
+    return result
